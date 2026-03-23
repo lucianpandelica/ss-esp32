@@ -1,10 +1,10 @@
-# PlatformIO
-.pio/
+./camera/.pio/
+./camera/secrets.ini
 
 # Python
-.venv/
-__pycache__/
-*.pyc
+./receiver/.venv/
+./receiver/__pycache__/
+./receiver/*.pyc
 
 # IDE
 .vscode/
