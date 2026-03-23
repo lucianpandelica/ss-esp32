@@ -1,13 +1,11 @@
 name: ESP32-CAM CI Pipeline
  
-# Declanșare la push sau pull request pe branch-ul main
+# Declanșare la push sau pull request pe branch-ul master
 on:
   push:
-    branches: [ "main" ]
-    tags:
-      - 'v*'
+    branches: [ "master" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "master" ]
 
 jobs:
   # =============================================
@@ -16,13 +14,6 @@ jobs:
   build-firmware:
     name: Build ESP32 Firmware
     runs-on: ubuntu-latest
-
-    permissions:
-        contents: write
-
-    defaults:
-        run:
-          working-directory: ./camera
 
     steps:
       - name: Checkout code
@@ -37,10 +28,6 @@ jobs:
         run: pip install platformio
 
       - name: Build Firmware (ESP32-CAM AI-Thinker)
-        env:
-          WIFI_SSID: ${{ secrets.WIFI_SSID }}
-          WIFI_PASS: ${{ secrets.WIFI_PASS }}
-          MQTT_SERVER: ${{ secrets.MQTT_SERVER }}
         run: pio run -e esp32cam
  
       # Salvăm firmware.bin ca artifact descărcabil
@@ -48,15 +35,16 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: firmware-esp32cam
-          path: ./camera/.pio/build/esp32cam/firmware.bin
-          
+          path: .pio/build/esp32cam/firmware.bin
+
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v1
         with:
-          files: ./camera/.pio/build/esp32cam/firmware.bin
-          generate_release_notes: true
- 
+          files: .pio/build/esp32cam/firmware.bin
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   # =============================================
   # Job 2: Analiza statică C++ (Firmware)
   # =============================================
@@ -64,10 +52,6 @@ jobs:
     name: Static Analysis (C++)
     runs-on: ubuntu-latest
 
-    defaults:
-        run:
-          working-directory: ./camera
-    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -95,10 +79,6 @@ jobs:
     name: Python Lint & Security
     runs-on: ubuntu-latest
 
-    defaults:
-        run:
-          working-directory: ./receiver/
-    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -107,6 +87,9 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+
+      - name: Smoke test (syntax)
+        run: python -m py_compile receiver.py
 
       - name: Install dependencies
         run: |
@@ -120,23 +103,3 @@ jobs:
 
       - name: Security scan with Bandit
         run: bandit receiver.py -ll
-
-  compile-test:
-    name: Python Compile Test
-    runs-on: ubuntu-latest
-
-    defaults:
-        run:
-          working-directory: ./receiver/
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-          
-      - name: Smoke test
-        run: python -m py_compile receiver.py
