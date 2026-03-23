@@ -3,9 +3,9 @@ name: ESP32-CAM CI Pipeline
 # Declanșare la push sau pull request pe branch-ul master
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ "master" ]
+    branches: [ "main" ]
 
 jobs:
   # =============================================
